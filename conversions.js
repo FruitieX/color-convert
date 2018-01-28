@@ -1,5 +1,6 @@
 /* MIT license */
 var cssKeywords = require('color-name');
+var ct = require('color-temperature');
 
 // NOTE: conversions should only return primitive values (i.e. arrays, or
 //       values that give correct `typeof` results).
@@ -18,6 +19,7 @@ var convert = module.exports = {
 	hsv: {channels: 3, labels: 'hsv'},
 	hwb: {channels: 3, labels: 'hwb'},
 	cmyk: {channels: 4, labels: 'cmyk'},
+	xyY: {channels: 3, labels: 'xyY'},
 	xyz: {channels: 3, labels: 'xyz'},
 	lab: {channels: 3, labels: 'lab'},
 	lch: {channels: 3, labels: 'lch'},
@@ -25,6 +27,8 @@ var convert = module.exports = {
 	keyword: {channels: 1, labels: ['keyword']},
 	ansi16: {channels: 1, labels: ['ansi16']},
 	ansi256: {channels: 1, labels: ['ansi256']},
+	ct: {channels: 2, labels: ['ct', 'brightness']},
+	mired: {channels: 2, labels: ['mired', 'brightness']},
 	hcg: {channels: 3, labels: ['h', 'c', 'g']},
 	apple: {channels: 3, labels: ['r16', 'g16', 'b16']},
 	gray: {channels: 1, labels: ['gray']}
@@ -418,6 +422,33 @@ convert.cmyk.rgb = function (cmyk) {
 	return [r * 255, g * 255, b * 255];
 };
 
+convert.xyY.xyz = function(xyY) {
+	var x = xyY[0];
+	var y = xyY[1];
+	var Y = xyY[2]; // brightness
+
+	var z = 1 - x - y;
+	var X = (Y / y) * x;
+	var Z = (Y / y) * z;
+
+	return [X, Y, Z];
+};
+
+convert.xyz.xyY = function(xyz) {
+	var X = xyz[0];
+	var Y = xyz[1];
+	var Z = xyz[2];
+
+	if (X + Y + Z === 0) {
+		return [0.3127, 0.3290, Y];
+	}
+
+	var x = X / (X + Y + Z);
+	var y = Y / (X + Y + Z);
+
+	return [x, y, Y];
+};
+
 convert.xyz.rgb = function (xyz) {
 	var x = xyz[0] / 100;
 	var y = xyz[1] / 100;
@@ -628,6 +659,36 @@ convert.ansi256.rgb = function (args) {
 	var b = (rem % 6) / 5 * 255;
 
 	return [r, g, b];
+};
+
+convert.mired.ct = function (args) {
+	return [1000000 / args[0], args[1]];
+};
+
+convert.ct.mired = function (args) {
+	return [1000000 / args[0], args[1]];
+};
+
+convert.ct.rgb = function (args) {
+	var rgb = ct.colorTemperature2rgb(args[0]);
+	return [
+		rgb.red * (args[1] / 100),
+		rgb.green * (args[1] / 100),
+		rgb.blue * (args[1] / 100)
+	];
+};
+
+convert.rgb.ct = function (args) {
+	var temp = ct.rgb2colorTemperature({
+		red: args[0],
+		green: args[1],
+		blue: args[2]
+	});
+
+	// TODO: this isn't exactly accurate...
+	var xyY = require('./index').rgb.xyY.raw(args);
+
+	return [temp, xyY[2]];
 };
 
 convert.rgb.hex = function (args) {

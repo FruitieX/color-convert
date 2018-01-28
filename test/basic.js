@@ -122,6 +122,15 @@ assert.deepEqual(convert.hcg.rgb([96, 39, 64]), [139, 199, 100]);
 assert.deepEqual(convert.hcg.hsv([96, 39, 64]), [96, 50, 78]);
 assert.deepEqual(convert.hcg.hsl([96, 39, 64]), [96, 47, 59]);
 
+assert.deepEqual(convert.ct.mired(4000), 250);
+assert.deepEqual(convert.ct.mired(2500), 400);
+
+assert.deepEqual(convert.ct.rgb(4500), [255, 219, 185]);
+assert.deepEqual(convert.ct.rgb(2500), [255, 162, 71]);
+
+assert.deepEqual(convert.rgb.ct([255, 162, 71]), 2495);
+assert.deepEqual(convert.rgb.ct([255, 219, 185]), 4476);
+
 // non-array arguments
 assert.deepEqual(convert.hsl.rgb(96, 48, 59), [140, 201, 100]);
 
